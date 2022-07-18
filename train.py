@@ -81,25 +81,36 @@ def train_model(cfg):
     start_epoch = global_step // len(dataloader) + 1
 
     for epoch in range(start_epoch, n_epochs + 1):
+        #######################################################################################
+        ## Epoch
+
         average_recon_loss = average_vq_loss = average_perplexity = 0
 
         for i, (audio, mels, speakers) in enumerate(tqdm(dataloader), 1):
+            ################################################################################
+            ## Step
+
+            # Load
             audio, mels, speakers = audio.to(device), mels.to(device), speakers.to(device)
 
             optimizer.zero_grad()
 
+            # Forward
             z, vq_loss, perplexity = encoder(mels)
             output = decoder(audio[:, :-1], z, speakers)
             recon_loss = F.cross_entropy(output.transpose(1, 2), audio[:, 1:])
             loss = recon_loss + vq_loss
 
+            # Backward
             with amp.scale_loss(loss, optimizer) as scaled_loss:
                 scaled_loss.backward()
 
+            # Optimize
             torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), 1)
             optimizer.step()
             scheduler.step()
 
+            # Logging
             average_recon_loss += (recon_loss.item() - average_recon_loss) / i
             average_vq_loss += (vq_loss.item() - average_vq_loss) / i
             average_perplexity += (perplexity.item() - average_perplexity) / i
@@ -110,13 +121,16 @@ def train_model(cfg):
                 save_checkpoint(
                     encoder, decoder, optimizer, amp,
                     scheduler, global_step, checkpoint_dir)
+            ## /Step
+            ################################################################################
 
+        # Logging
         writer.add_scalar("recon_loss/train", average_recon_loss, global_step)
         writer.add_scalar("vq_loss/train", average_vq_loss, global_step)
         writer.add_scalar("average_perplexity", average_perplexity, global_step)
-
-        print("epoch:{}, recon loss:{:.2E}, vq loss:{:.2E}, perpexlity:{:.3f}"
-              .format(epoch, average_recon_loss, average_vq_loss, average_perplexity))
+        print("epoch:{}, recon loss:{:.2E}, vq loss:{:.2E}, perpexlity:{:.3f}".format(epoch, average_recon_loss, average_vq_loss, average_perplexity))
+        ## /Epoch
+        #######################################################################################
 
 
 if __name__ == "__main__":
