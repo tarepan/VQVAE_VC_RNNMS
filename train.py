@@ -4,7 +4,6 @@ from itertools import chain
 from pathlib import Path
 from tqdm import tqdm
 
-import apex.amp as amp
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -15,12 +14,11 @@ from dataset import SpeechDataset
 from model import Encoder, Decoder
 
 
-def save_checkpoint(encoder, decoder, optimizer, amp, scheduler, step, checkpoint_dir):
+def save_checkpoint(encoder, decoder, optimizer, scheduler, step, checkpoint_dir):
     checkpoint_state = {
         "encoder": encoder.state_dict(),
         "decoder": decoder.state_dict(),
         "optimizer": optimizer.state_dict(),
-        "amp": amp.state_dict(),
         "scheduler": scheduler.state_dict(),
         "step": step}
     checkpoint_dir.mkdir(exist_ok=True, parents=True)
@@ -44,7 +42,6 @@ def train_model(cfg):
     optimizer = optim.Adam(
         chain(encoder.parameters(), decoder.parameters()),
         lr=cfg.training.optimizer.lr)
-    [encoder, decoder], optimizer = amp.initialize([encoder, decoder], optimizer, opt_level="O1")
     scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=cfg.training.scheduler.milestones,
         gamma=cfg.training.scheduler.gamma)
@@ -56,7 +53,6 @@ def train_model(cfg):
         encoder.load_state_dict(checkpoint["encoder"])
         decoder.load_state_dict(checkpoint["decoder"])
         optimizer.load_state_dict(checkpoint["optimizer"])
-        amp.load_state_dict(checkpoint["amp"])
         scheduler.load_state_dict(checkpoint["scheduler"])
         global_step = checkpoint["step"]
     else:
@@ -102,11 +98,10 @@ def train_model(cfg):
             loss = recon_loss + vq_loss
 
             # Backward
-            with amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
+            loss.backward()
 
             # Optimize
-            torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), 1)
+            torch.nn.utils.clip_grad_norm_(chain(encoder.parameters(), decoder.parameters()), 1)
             optimizer.step()
             scheduler.step()
 
@@ -119,7 +114,7 @@ def train_model(cfg):
 
             if global_step % cfg.training.checkpoint_interval == 0:
                 save_checkpoint(
-                    encoder, decoder, optimizer, amp,
+                    encoder, decoder, optimizer,
                     scheduler, global_step, checkpoint_dir)
             ## /Step
             ################################################################################
