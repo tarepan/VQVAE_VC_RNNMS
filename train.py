@@ -20,11 +20,12 @@ def save_checkpoint(encoder, decoder, optimizer, scheduler, step, checkpoint_dir
         "decoder": decoder.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
-        "step": step}
+        "step": step,
+    }
     checkpoint_dir.mkdir(exist_ok=True, parents=True)
-    checkpoint_path = checkpoint_dir / "model.ckpt-{}.pt".format(step)
+    checkpoint_path = checkpoint_dir / f"model.ckpt-{step}.pt"
     torch.save(checkpoint_state, checkpoint_path)
-    print("Saved checkpoint: {}".format(checkpoint_path.stem))
+    print(f"Saved checkpoint: {checkpoint_path.stem}")
 
 
 @hydra.main(config_path="config/train.yaml")
@@ -47,7 +48,7 @@ def train_model(cfg):
         gamma=cfg.training.scheduler.gamma)
 
     if cfg.resume:
-        print("Resume checkpoint from: {}:".format(cfg.resume))
+        print(f"Resume checkpoint from: {cfg.resume}")
         resume_path = utils.to_absolute_path(cfg.resume)
         checkpoint = torch.load(resume_path, map_location=lambda storage, loc: storage)
         encoder.load_state_dict(checkpoint["encoder"])
@@ -86,10 +87,10 @@ def train_model(cfg):
             ################################################################################
             ## Step
 
+            optimizer.zero_grad()
+
             # Load
             audio, mels, speakers = audio.to(device), mels.to(device), speakers.to(device)
-
-            optimizer.zero_grad()
 
             # Forward
             z, vq_loss, perplexity = encoder(mels)
@@ -113,9 +114,7 @@ def train_model(cfg):
             global_step += 1
 
             if global_step % cfg.training.checkpoint_interval == 0:
-                save_checkpoint(
-                    encoder, decoder, optimizer,
-                    scheduler, global_step, checkpoint_dir)
+                save_checkpoint(encoder, decoder, optimizer, scheduler, global_step, checkpoint_dir)
             ## /Step
             ################################################################################
 
@@ -124,6 +123,9 @@ def train_model(cfg):
         writer.add_scalar("vq_loss/train", average_vq_loss, global_step)
         writer.add_scalar("average_perplexity", average_perplexity, global_step)
         print("epoch:{}, recon loss:{:.2E}, vq loss:{:.2E}, perpexlity:{:.3f}".format(epoch, average_recon_loss, average_vq_loss, average_perplexity))
+
+        # Validation
+        pass
         ## /Epoch
         #######################################################################################
 
