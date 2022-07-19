@@ -1,8 +1,8 @@
 <div align="center">
 
-# VQ-VAE for Acoustic Unit Discovery and Voice Conversion <!-- omit in toc -->
-<!-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)][notebook] -->
-[![Paper](http://img.shields.io/badge/paper-arxiv.2005.09409-B31B1B.svg)][paper]  
+# VQ-VAE-VC with RNNMS <!-- omit in toc -->
+[![ColabBadge]][notebook]
+[![PaperBadge]][paper]  
 
 </div>
 
@@ -35,7 +35,6 @@ Pretrained weights for the 2019 English and Indonesian datasets can be found [he
 
 ### Requirements
 - PyTorch>=1.4
-- [NVIDIA/apex](https://github.com/NVIDIA/apex)
 
 ### Install
 ```bash
@@ -137,8 +136,16 @@ The ABX score for the pretrained english model (available [here](https://github.
 }
 ```
 
+182 step/267sec == 1.467 sec/iter -> 204 h /50Ksteps
+
+## Results
+### Performance
+- training
+  - 1.47 [sec/iter] @ NVIDIA P100 on Google Colaboratory (AMP-)
+  - take about 8.5 days for whole training (50k steps)
+
 ## Original paper
-[![Paper](http://img.shields.io/badge/paper-arxiv.2005.09409-B31B1B.svg)][paper]  
+[![PaperBadge]][paper]
 <!-- https://arxiv2bibtex.org/?q=2005.09409&format=bibtex -->
 ```
 @misc{2005.09409,
@@ -149,8 +156,11 @@ Eprint = {arXiv:2005.09409},
 }
 ```
 
-[paper]:https://arxiv.org/abs/2005.09409
-<!-- [notebook]:https://colab.research.google.com/github/tarepan/Scyclone-PyTorch/blob/main/Scyclone_PyTorch.ipynb -->
-
 ## Contact
 Please check [original repository](https://github.com/bshall/ZeroSpeech).  
+
+[ColabBadge]:https://colab.research.google.com/assets/colab-badge.svg
+
+[paper]:https://arxiv.org/abs/2005.09409
+[PaperBadge]:https://img.shields.io/badge/paper-arxiv.2005.09409-B31B1B.svg
+[notebook]:https://colab.research.google.com/github/tarepan/VQVAE_VC_RNNMS/blob/main/vqvaevcrnnms.ipynb
