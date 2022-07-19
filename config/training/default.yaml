@@ -1,7 +1,7 @@
 training:
     batch_size: 52
     sample_frames: 32
-    n_steps: 500000
+    n_steps: 500000 # The number of maximum training step
     optimizer:
         lr: 4e-4
     scheduler:
