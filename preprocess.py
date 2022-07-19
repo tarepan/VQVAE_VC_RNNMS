@@ -53,20 +53,28 @@ def process_wav(wav_path, out_path, sr=160000, preemph=0.97, n_fft=2048, n_mels=
 
 @hydra.main(config_path="config/preprocessing.yaml")
 def preprocess_dataset(cfg):
-    in_dir = Path(utils.to_absolute_path(cfg.in_dir))
-    out_dir = Path(utils.to_absolute_path("datasets")) / str(cfg.dataset.dataset)
+    in_dir = Path(utils.to_absolute_path(cfg.in_dir)) # `in_dir` CLI argument
+    out_dir = Path(utils.to_absolute_path("datasets")) / str(cfg.dataset.dataset) # "./datasets/2019"
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # dataset
+    #     dataset: 2019
+    #     language: english
+    #     path: 2019/english
+    #     n_speakers: 102
+    # preprocessing: default
+    # in_dir
 
     executor = ProcessPoolExecutor(max_workers=cpu_count())
     for split in ["train", "test"]:
-        print("Extracting features for {} set".format(split))
+        print(f"Extracting features for {split} set")
         futures = []
-        split_path = out_dir / cfg.dataset.language / split
+        split_path = out_dir / cfg.dataset.language / split # ./datasets/2019/english/{train|test}
         with open(split_path.with_suffix(".json")) as file:
             metadata = json.load(file)
             for in_path, start, duration, out_path in metadata:
-                wav_path = in_dir / in_path
-                out_path = out_dir / out_path
+                wav_path = in_dir / in_path   # {in_dir}/{in_path (e.g. "english/train/unit/S015_0361841101")}
+                out_path = out_dir / out_path # ./datasets/2019/{out_path}
                 out_path.parent.mkdir(parents=True, exist_ok=True)
                 futures.append(executor.submit(
                     partial(process_wav, wav_path, out_path, **cfg.preprocessing,
